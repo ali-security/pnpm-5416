@@ -21,55 +21,55 @@ jobs:
         node:
           - [22, 12, 0]
         platform:
-          - ubuntu-latest
-          - windows-latest
+          - ubuntu-24.04
+          - windows-2025
 
     name: ${{matrix.platform}} / Node.js ${{ matrix.node[0] }}
     runs-on: ${{matrix.platform}}
 
     steps:
-    - name: Configure Git
-      run: |
-        git config --global core.autocrlf false
-        git config --global user.name "xyz"
-        git config --global user.email "x@y.z"
-    - name: Checkout Commit
-      uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
-    - name: Install pnpm
-      uses: pnpm/action-setup@41ff72655975bd51cab0327fa583b6e92b6d3061 # v4.2.0
-      with:
-        standalone: true
-    - name: Setup Node
-      run: pnpm env use -g ${{ join(matrix.node, '.') }}
-      timeout-minutes: 1
-    - name: Install npm@8
-      run: pnpm add --global npm@8
-      timeout-minutes: 1
-    - name: pnpm install
+      - name: Configure Git
+        run: |
+          git config --global core.autocrlf false
+          git config --global user.name "xyz"
+          git config --global user.email "x@y.z"
+      - name: Checkout Commit
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+      - name: Install pnpm
+        uses: pnpm/action-setup@41ff72655975bd51cab0327fa583b6e92b6d3061 # v4.2.0
+        with:
+          standalone: true
+      - name: Setup Node
+        run: pnpm env use -g ${{ join(matrix.node, '.') }}
+        timeout-minutes: 1
+      - name: Install npm@8
+        run: pnpm add --global npm@8
+        timeout-minutes: 1
+      - name: pnpm install
       # Single line (no `\` continuation) so it runs under both bash (Linux) and
       # PowerShell (Windows). supportedArchitectures pulls @reflink/reflink binaries
       # for all platforms so the bundled `pnpm` artifact is cross-platform.
-      run: pnpm install --frozen-lockfile --config.supportedArchitectures.os=linux --config.supportedArchitectures.os=darwin --config.supportedArchitectures.os=win32 --config.supportedArchitectures.cpu=x64 --config.supportedArchitectures.cpu=arm64
-      timeout-minutes: 5
-    - name: Build pnpm
-      run: pnpm compile
-      timeout-minutes: 20
-    - name: Pack pnpm tarball
-      if: matrix.platform == 'ubuntu-latest' && matrix.node[0] == 22
-      working-directory: pnpm
+        run: pnpm install --frozen-lockfile --config.supportedArchitectures.os=linux --config.supportedArchitectures.os=darwin --config.supportedArchitectures.os=win32 --config.supportedArchitectures.cpu=x64 --config.supportedArchitectures.cpu=arm64
+        timeout-minutes: 5
+      - name: Build pnpm
+        run: pnpm compile
+        timeout-minutes: 20
+      - name: Pack pnpm tarball
+        if: matrix.platform == 'ubuntu-24.04' && matrix.node[0] == 22
+        working-directory: pnpm
       # publish-packed pulls in esm@3 which crashes on Node 22, so we switch
       # to Node 20 just for this step. We invoke publish-packed explicitly
       # because enablePrePostScripts=false prevents `pnpm pack` from running
       # the prepublishOnly lifecycle script.
-      run: |
-        pnpm env use -g 20
-        pnpm exec publish-packed --prune --npm-client=pnpm --dest=dist
-        pnpm pack
-    - name: Upload pnpm tarball
-      if: matrix.platform == 'ubuntu-latest' && matrix.node[0] == 22
-      uses: actions/upload-artifact@v4
-      with:
-        name: pnpm-tarball
-        path: pnpm/pnpm-*.tgz
-        retention-days: 1
-        if-no-files-found: error
+        run: |
+          pnpm env use -g 20
+          pnpm exec publish-packed --prune --npm-client=pnpm --dest=dist
+          pnpm pack
+      - name: Upload pnpm tarball
+        if: matrix.platform == 'ubuntu-24.04' && matrix.node[0] == 22
+        uses: actions/upload-artifact@v4
+        with:
+          name: pnpm-tarball
+          path: pnpm/pnpm-*.tgz
+          retention-days: 1
+          if-no-files-found: error
